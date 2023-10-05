@@ -28,18 +28,20 @@ async def on_message(message):
             await message.channel.send(response)
     # Checking the desired Format
     elif message.content.lower().startswith("!evalbot"):
-        message_str = str(message.content).split("\n")
-        print(message_str)
-        response = await fomatting_check(message_str)
+        response = await fomatting_check(message)
         await message.channel.send(response)
 
 @client.event
 async def on_message_edit(before, after):
     if after.author == client.user:
         return
-    message_str = str(after.content).split("\n")
-    response = await fomatting_check(message_str)
-    await after.channel.send (response)
+    if after.content.lower().startswith("!evalbot new event"):
+        if after.author.id == after.channel.guild.owner_id:
+            response = await eventData(after)
+            await after.channel.send(response)
+    elif after.content.lower().startswith("!evalbot"):
+        response = await fomatting_check(after)
+        await after.channel.send (response)
 
 # it tells the bot to run
 client.run(discord_api_key)
