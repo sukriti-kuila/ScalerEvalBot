@@ -9,6 +9,7 @@ async def fomatting_check(message, cluster):
     if(len(message_str) < 2):
         return "Follow the format carefully"
     else:
+        channel_name = str(message.channel)
         first_line = message_str[0].split()
         bot_command = first_line[0].lower()
         completion_command = first_line[1 : len(first_line)]
@@ -16,15 +17,9 @@ async def fomatting_check(message, cluster):
         Second_line = message_str[1]
         post_pattern = r'^social media link : https://(www.linkedin.com|x.com|twitter.com)/+'
 
-
-        start_time = datetime(2023, 10, 1) + timedelta(hours = 11, minutes = 00, seconds = 00)
-        challenge_days = 30
-        current_time = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
-        # convert String type to datetime object
-        current_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
-
-        day_no = (current_time - start_time).days + 1
-
+        day_no = findDayNumber(channel_name, cluster)
+        if day_no==None:
+            return "The Event is not registered yet!\n Contact with moderators"
         user_day_no = int(completion_command[1][3:len(completion_command[1])])
         if message.attachments:
             attachment = message.attachments[0]
@@ -34,8 +29,7 @@ async def fomatting_check(message, cluster):
         else:
             return "Please attach a screenshot of the task\nSupported formats [jpg,jpeg,png,gif,webp,bmp]"
 
-
-        if len(first_line) == 3 and bot_command == "!evalbot" and completion_command[0].lower() == "completed" and completion_command[1][0:3].lower() == "day" and (0 < int(completion_command[1][3:len(completion_command[1])]) <= challenge_days) and  user_day_no== day_no:
+        if len(first_line) == 3 and bot_command == "!evalbot" and completion_command[0].lower() == "completed" and completion_command[1][0:3].lower() == "day" and  user_day_no== day_no:
             if re.match(post_pattern, Second_line.lower()):
                 return "YOU HAVE SUCCESSFULLY COMPLETED TODAY'S TASK :partying_face: "
             else:
@@ -43,7 +37,7 @@ async def fomatting_check(message, cluster):
 
         else:
             if user_day_no != day_no:
-                return "------------------\nYou have made a formatting mistake in line 1\nLooks like the day number is wrong\nEdit the previous message or send a new message to rectify the mistake\n------------------"
+                return "------------------\nYou have made a formatting mistake in line 1\nEither day number is wrong OR you've send the message in a wrong channel\nEdit the previous message or send a new message to rectify the mistake\n------------------"
             return "------------------\nYou have made a formatting mistake in line 1\nEdit the previous message or send a new message using the following format for line1\n\n!Evalbot completed day<day no> (Case-Insensitive)\n------------------"
 
 async def eventData(message,cluster):
@@ -64,7 +58,7 @@ async def eventData(message,cluster):
                     # Download the CSV file
                     filename = event_name+""+".csv"
                     await attachment.save(filename)
-                    await db_connection(cluster, event_name, event_duration, filename)
+                    await db_connection(cluster, event_name, event_duration, start_date, filename)
                     return "Participant entries have been successfully recorded"
                 else:
                     return "Please attach a CSV file"
@@ -73,10 +67,10 @@ async def eventData(message,cluster):
         else:
             return "Please follow the proper format to register data"
         
-async def db_connection(cluster, event_name, event_duration, filename):
+async def db_connection(cluster, event_name, event_duration, start_date, filename):
     db = cluster["Events"]
     collection = db[event_name]
-    event_details = {"_id":0,"event_name":event_name,"event_duration":event_duration}
+    event_details = {"_id":0,"event_name":event_name,"start_date":start_date,"event_duration":event_duration}
     collection.insert_one(event_details)
 
     with open(filename, newline='') as f:
@@ -111,3 +105,27 @@ def is_valid_duration(duration):
     except ValueError:
         print("Error")
         return False    
+    
+def findDayNumber(channel_name, cluster):
+    db = cluster["Events"]
+    collection = db[channel_name]
+    #event info has been stored in the document with _id = 0
+    filter = {"_id": 0}
+    document = collection.find_one(filter)
+    if document:
+        start_date = document.get("start_date")
+        if start_date:
+            print(f"Stat Date: {start_date}")
+            year = int(start_date.split("-")[2])
+            month = int(start_date.split("-")[1])
+            day = int(start_date.split("-")[0])
+            start_time = datetime(year, month, day) + timedelta(hours = 11, minutes = 00, seconds = 00)
+            current_time = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
+            # convert String type to datetime object
+            current_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
+            day_no = (current_time - start_time).days + 1
+            return day_no
+        else:
+            print("Start Date field not found in the document.")
+    else:
+        print("Document not found in the collection.")

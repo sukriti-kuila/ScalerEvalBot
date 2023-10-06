@@ -31,6 +31,14 @@ async def on_message(message):
         if message.author.id == message.channel.guild.owner_id:
             response = await eventData(message, cluster)
             await message.channel.send(response)
+    # Adding tokens
+    elif message.content.lower().startswith("!evalbot add token"):
+        if message.author.id == message.channel.guild.owner_id:
+            amount = int(str(message.content).split("\n")[1])
+            username = "abhunia."
+            # command = f"t@points add @{username} {amount}"
+            command = f"t!points @{username}"
+            await message.channel.send(command)
     # Checking the desired Format
     elif message.content.lower().startswith("!evalbot"):
         response = await fomatting_check(message,cluster)
