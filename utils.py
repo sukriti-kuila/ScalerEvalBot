@@ -1,8 +1,9 @@
 import re
 from datetime import datetime, timedelta
 import pytz
+import csv
 
-async def fomatting_check(message):
+async def fomatting_check(message, cluster):
     message_str = str(message.content).split("\n")
     print(message_str)
     if(len(message_str) < 2):
@@ -45,7 +46,7 @@ async def fomatting_check(message):
                 return "------------------\nYou have made a formatting mistake in line 1\nLooks like the day number is wrong\nEdit the previous message or send a new message to rectify the mistake\n------------------"
             return "------------------\nYou have made a formatting mistake in line 1\nEdit the previous message or send a new message using the following format for line1\n\n!Evalbot completed day<day no> (Case-Insensitive)\n------------------"
 
-async def eventData(message):
+async def eventData(message,cluster):
         message_str = str(message.content).split("\n")
         if len(message_str)==4:
             event_name = message_str[1]
@@ -63,6 +64,7 @@ async def eventData(message):
                     # Download the CSV file
                     filename = event_name+""+".csv"
                     await attachment.save(filename)
+                    await db_connection(cluster, event_name, event_duration, filename)
                     return "Participant entries have been successfully recorded"
                 else:
                     return "Please attach a CSV file"
@@ -70,6 +72,30 @@ async def eventData(message):
                 return "Please attach a CSV file"
         else:
             return "Please follow the proper format to register data"
+        
+async def db_connection(cluster, event_name, event_duration, filename):
+    db = cluster["Events"]
+    collection = db[event_name]
+    event_details = {"_id":0,"event_name":event_name,"event_duration":event_duration}
+    collection.insert_one(event_details)
+
+    with open(filename, newline='') as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        print(header)
+        csvFile = open(filename, 'r')
+        reader = csv.DictReader(csvFile)
+
+        for each in reader:
+            row = {}
+            for field in header:
+                if field in each:
+                    row[field] = each[field]
+                else:
+                    # Handle missing columns here (e.g., provide a default value)
+                    row[field] = None
+            row["day"] = int(0)
+            collection.insert_one(row)
 
 def is_valid_date(date_str):
     try:

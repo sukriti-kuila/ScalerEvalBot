@@ -1,8 +1,12 @@
 import discord
 from discord.ext import commands
 from decouple import config
+from pymongo import MongoClient
 
 from utils import *
+#db connection
+DB_URI_STRING = config('DB_URI_STRING')
+cluster = MongoClient(DB_URI_STRING)
 
 #token
 discord_api_key = config('DISCORD_BOT_TOKEN')
@@ -23,13 +27,15 @@ async def on_message(message):
         return
     # Reading participant data
     if message.content.lower().startswith("!evalbot new event"):
+        print("First if-else block")
         if message.author.id == message.channel.guild.owner_id:
-            response = await eventData(message)
+            response = await eventData(message, cluster)
             await message.channel.send(response)
     # Checking the desired Format
     elif message.content.lower().startswith("!evalbot"):
-        response = await fomatting_check(message)
+        response = await fomatting_check(message,cluster)
         await message.channel.send(response)
+
 
 @client.event
 async def on_message_edit(before, after):
@@ -37,10 +43,10 @@ async def on_message_edit(before, after):
         return
     if after.content.lower().startswith("!evalbot new event"):
         if after.author.id == after.channel.guild.owner_id:
-            response = await eventData(after)
+            response = await eventData(after,cluster)
             await after.channel.send(response)
     elif after.content.lower().startswith("!evalbot"):
-        response = await fomatting_check(after)
+        response = await fomatting_check(after,cluster)
         await after.channel.send (response)
 
 # it tells the bot to run

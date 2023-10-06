@@ -12,7 +12,7 @@ import csv
 load_dotenv(find_dotenv())
 
 password = os.environ.get("MONGODB_PWD")
-connection_string = f"mongodb+srv://ayan:{password}@cluster0.2hgz0zg.mongodb.net/?retryWrites=true&w=majority"
+connection_string = f""
 try:
     client = MongoClient(connection_string)
 except Exception:
