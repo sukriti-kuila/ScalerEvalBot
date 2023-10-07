@@ -2,6 +2,7 @@ import re
 from datetime import datetime, timedelta
 import pytz
 import csv
+import pandas as pd
 from connection import *
 
 async def fomatting_check(message):
@@ -34,7 +35,7 @@ async def fomatting_check(message):
         if len(first_line) == 3 and bot_command == "!evalbot" and completion_command[0].lower() == "completed" and completion_command[1][0:3].lower() == "day" and  user_day_no== day_no:
             if re.match(post_pattern, Second_line.lower()):
                 # update day number in the database
-                response = await update_dayNumber(message.author.name, channel_name, day_no)
+                response = await update_dayNumber(str(message.author), message.author.id, channel_name, day_no)
                 return response
             else:
                 return "------------------\nYou have made a formatting mistake in line 2\nEdit the previous message or send a new message using the following format for line2\n\nsocial media link : <linkedin/twitter post> (Case-Insensitive)\n------------------"
@@ -53,7 +54,7 @@ async def eventData(message):
             print(start_date)
             
             if not is_valid_date(start_date):
-                return "The date format is wrong follow this format\n DD-MM-YYYY"
+                return "The date format is wrong follow this format\n DD-MM-YYYY %H:%M:%S"
             if not is_valid_duration(event_duration):
                 return "Please Enter a numeric value for duration"
             print (f"name {event_name} start {start_date} duration {event_duration}")
@@ -73,6 +74,19 @@ async def eventData(message):
         else:
             return "Please follow the proper format to register data"
         
+
+async def delete_event(message):
+    message_str = str(message.content).split("\n")
+    if len(message_str) == 2:
+        event_name = message_str[1]
+
+        cluster = await get_connection()
+        db = cluster["Events"]
+        if event_name in db.list_collection_names():
+            db.drop_collection(event_name)
+            return f"Event - {event_name} successfully deleted"
+        return f"{event_name} does not exit in database"
+        
         
 async def db_connection(event_name, event_duration, start_date, filename):
     # connect with mongodb
@@ -83,29 +97,17 @@ async def db_connection(event_name, event_duration, start_date, filename):
     event_details = {"_id":0,"event_name":event_name,"start_date":start_date,"event_duration":event_duration}
     collection.insert_one(event_details)
 
-    with open(filename, newline='') as f:
-        # extracting first row(attributes)
-        reader = csv.reader(f)
-        header = next(reader)
-        print(header)
-
-        # inserting participant's details
-        csvFile = open(filename, 'r')
-        reader = csv.DictReader(csvFile)
-        for each in reader:
-            row = {}
-            for field in header:
-                if field in each:
-                    row[field] = each[field]
-                else:
-                    row[field] = None
-            row["day"] = int(0)
-            collection.insert_one(row)
+    # using pandas
+    df = pd.read_csv(filename)  # table format
+    df["day"] = int(0)
+    # convert to dictionary
+    records_dictionary = df.to_dict(orient='records')
+    collection.insert_many(records_dictionary)
 
 
 def is_valid_date(date_str):
     try:
-        datetime.strptime(date_str, '%d-%m-%Y')
+        datetime.strptime(date_str, "%d-%m-%Y %H:%M:%S")
         return True
     except ValueError:
         print("Error")
@@ -130,13 +132,16 @@ async def findDayNumber(channel_name):
     filter = {"_id": 0}
     document = collection.find_one(filter)
     if document:
-        start_date = document.get("start_date")
+        start_date = (document.get("start_date")).split()
         if start_date:
             print(f"Stat Date: {start_date}")
-            year = int(start_date.split("-")[2])
-            month = int(start_date.split("-")[1])
-            day = int(start_date.split("-")[0])
-            start_time = datetime(year, month, day) + timedelta(hours = 11, minutes = 00, seconds = 00)
+            year = int(start_date[0].split("-")[2])
+            month = int(start_date[0].split("-")[1])
+            day = int(start_date[0].split("-")[0])
+            hour = int(start_date[1].split(":")[0])
+            minute = int(start_date[1].split(":")[1])
+            second = int(start_date[1].split(":")[2])
+            start_time = datetime(year, month, day) + timedelta(hours = hour, minutes = minute, seconds = second)
             current_time = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
             # convert String type to datetime object
             current_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
@@ -148,7 +153,7 @@ async def findDayNumber(channel_name):
         print("Document not found in the collection.")
 
 
-async def update_dayNumber(author_name, channel_name, current_day):
+async def update_dayNumber(author_name, author_id, channel_name, current_day):
     # connect with mongodb
     cluster = await get_connection()
 
@@ -157,7 +162,7 @@ async def update_dayNumber(author_name, channel_name, current_day):
     
     all_records = collection.find()
     for record in all_records:
-        if author_name in record.values():
+        if author_name in record.values() or author_id in record.values():
             prev_day = record.get("day")
             # out of challenge
             if(current_day - prev_day > 1):
@@ -166,5 +171,6 @@ async def update_dayNumber(author_name, channel_name, current_day):
             else:
                 collection.update_one(record, {"$set":{"day":current_day}})
                 return "YOU HAVE SUCCESSFULLY COMPLETED TODAY'S TASK :partying_face: "
+    return f"{author_name}, you have not registered for {channel_name}"
 
 
