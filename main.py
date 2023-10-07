@@ -38,6 +38,12 @@ async def on_message(message):
             command = f"t!points @{username}"
             await message.channel.send(command)
 
+    # delete event from database
+    elif message.content.lower().startswith("!evalbot delete event"):
+        if message.author.id == message.channel.guild.owner_id:
+            response = await delete_event(message)
+            await message.channel.send(response)
+
     # Checking the desired Format
     elif message.content.lower().startswith("!evalbot"):
         response = await fomatting_check(message)
