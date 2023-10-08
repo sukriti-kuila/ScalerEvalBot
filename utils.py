@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import pytz
 import csv
 import pandas as pd
+import discord
 from connection import *
 
 async def fomatting_check(message):
@@ -74,6 +75,21 @@ async def eventData(message):
         else:
             return {"message": "Please attach a CSV file", "success": False}
         
+async def db_connection(event_name, event_duration, start_date, filename):
+    # connect with mongodb
+    cluster = await get_connection()
+    
+    db = cluster["Events"]
+    collection = db[event_name]
+    event_details = {"_id":0,"event_name":event_name,"start_date":start_date,"event_duration":int(event_duration)}
+    collection.insert_one(event_details)
+
+    # using pandas
+    df = pd.read_csv(filename)  # table format
+    df["day"] = int(0)
+    # convert to dictionary
+    records_dictionary = df.to_dict(orient='records')
+    collection.insert_many(records_dictionary)
 
 async def delete_event(message):
     message_str = str(message.content).split("\n")
@@ -86,25 +102,7 @@ async def delete_event(message):
             db.drop_collection(event_name)
             return f"Event - {event_name} successfully deleted"
         return f"{event_name} does not exit in database"
-        
-        
-async def db_connection(event_name, event_duration, start_date, filename):
-    # connect with mongodb
-    cluster = await get_connection()
     
-    db = cluster["Events"]
-    collection = db[event_name]
-    event_details = {"_id":0,"event_name":event_name,"start_date":start_date,"event_duration":event_duration}
-    collection.insert_one(event_details)
-
-    # using pandas
-    df = pd.read_csv(filename)  # table format
-    df["day"] = int(0)
-    # convert to dictionary
-    records_dictionary = df.to_dict(orient='records')
-    collection.insert_many(records_dictionary)
-
-
 def is_valid_date(date_str):
     try:
         datetime.strptime(date_str, "%d-%m-%Y %H:%M:%S")
@@ -154,7 +152,6 @@ async def findDayNumber(channel_name):
     else:
         print("Document not found in the collection.")
 
-
 async def update_dayNumber(author_name, author_id, channel_name, current_day):
     # connect with mongodb
     cluster = await get_connection()
@@ -174,6 +171,47 @@ async def update_dayNumber(author_name, author_id, channel_name, current_day):
                 collection.update_one(record, {"$set":{"day":current_day}})
                 return {"message": f"YOU HAVE SUCCESSFULLY COMPLETED DAY {current_day} TASK :partying_face:", "success": True}
     return {"message": f"{author_name}, you have not registered for {channel_name}", "success": False}
+
+async def exportResultCSV(event_name):
+        cluster = await get_connection()
+        db = cluster["Events"]
+        try:
+            collection = db[event_name]
+            # fetch the event_duration from DB
+            document = collection.find_one({"_id": 0})
+            event_duration = document.get("event_duration")
+            
+            records = collection.find({"day": event_duration})
+
+            # Count the number of records that match the event_duration filter
+            record_count = collection.count_documents({"day": event_duration})
+
+            if record_count > 0:
+                records = collection.find({"day": event_duration})
+                # Convert records to a list of dictionaries
+                records_list = list(records)
+
+                df = pd.DataFrame(records_list)
+
+                columns_to_exclude = ["_id","day"]
+                df = df.drop(columns=columns_to_exclude)
+
+                csv_filename = f"{event_name}_result.csv"
+                df.to_csv(csv_filename, index=False)
+
+                file = discord.File(csv_filename)
+            cluster.close()
+            return {"message":file, "success": True}
+        except:
+            return {"message":"There is no such **event**","success":False}
+        
+        
+
+
+
+
+
+
 
 
 
