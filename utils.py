@@ -9,7 +9,7 @@ async def fomatting_check(message):
     message_str = str(message.content).split("\n")
     print(message_str)
     if(len(message_str) < 2):
-        return "Follow the format carefully"
+        return {"message": "Follow the format carefully", "success": False}
     else:
         channel_name = str(message.channel)
         first_line = message_str[0].split()
@@ -21,16 +21,16 @@ async def fomatting_check(message):
         day_no = await findDayNumber(channel_name)
         print("day_no ", day_no)
         if day_no==None:
-            return "The Event is not registered yet!\n Contact with moderators"
+            return {"message": "The Event is not registered yet!\n Contact with moderators", "success": False}
         user_day_no = int(completion_command[1][3:len(completion_command[1])])
 
         if message.attachments:
             attachment = message.attachments[0]
             filename = attachment.filename.lower()
             if not filename.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')):
-                return "Please attach a screenshot of the task\nSupported formats [jpg,jpeg,png,gif,webp,bmp]"
+                return {"message": "Please attach a screenshot of the task\n**Supported formats [jpg,jpeg,png,gif,webp,bmp]**", "success": False}
         else:
-            return "Please attach a screenshot of the task\nSupported formats [jpg,jpeg,png,gif,webp,bmp]"
+            return {"message": "Please attach a screenshot of the task\n**Supported formats [jpg,jpeg,png,gif,webp,bmp]**", "success": False}
 
         if len(first_line) == 3 and bot_command == "!evalbot" and completion_command[0].lower() == "completed" and completion_command[1][0:3].lower() == "day" and  user_day_no== day_no:
             if re.match(post_pattern, Second_line.lower()):
@@ -38,11 +38,11 @@ async def fomatting_check(message):
                 response = await update_dayNumber(str(message.author), message.author.id, channel_name, day_no)
                 return response
             else:
-                return "------------------\nYou have made a formatting mistake in line 2\nEdit the previous message or send a new message using the following format for line2\n\nsocial media link : <linkedin/twitter post> (Case-Insensitive)\n------------------"
+                return {"message": "\nYou have made a formatting mistake in line 2\nEdit the previous message or send a new message using the following format for line2\n\nsocial media link : <linkedin/twitter post> (Case-Insensitive)\n", "success": False}
         else:
             if user_day_no != day_no:
-                return "------------------\nYou have made a formatting mistake in line 1\nEither day number is wrong OR you've send the message in a wrong channel\nEdit the previous message or send a new message to rectify the mistake\n------------------"
-            return "------------------\nYou have made a formatting mistake in line 1\nEdit the previous message or send a new message using the following format for line1\n\n!Evalbot completed day<day no> (Case-Insensitive)\n------------------"
+                return {"message": "Looks like the day number is wrong\n**Edit the previous message or send a new message to rectify the mistake**", "success": False}
+            return {"message": "\nYou have made a formatting mistake in line 1\nEdit the previous message or send a new message using the following format for line1\n\n!Evalbot completed day<day no> (Case-Insensitive)\n", "success": False}
 
 
 async def eventData(message):
@@ -54,9 +54,9 @@ async def eventData(message):
             print(start_date)
             
             if not is_valid_date(start_date):
-                return "The date format is wrong follow this format\n DD-MM-YYYY %H:%M:%S"
+                return {"message": "The date format is wrong follow this format\n DD-MM-YYYY H:M:S", "success": False}
             if not is_valid_duration(event_duration):
-                return "Please Enter a numeric value for duration"
+                return {"message": "Please Enter a numeric value for duration", "success": False}
             print (f"name {event_name} start {start_date} duration {event_duration}")
             
             if message.attachments:
@@ -66,13 +66,13 @@ async def eventData(message):
                     filename = event_name+""+".csv"
                     await attachment.save(filename)
                     await db_connection(event_name, event_duration, start_date, filename)
-                    return "Participant entries have been successfully recorded"
+                    return {"message": "Participants entries have been successfully recorded", "success": True}
                 else:
-                    return "Please attach a CSV file"
+                    return {"message": "Please attach a CSV file", "success": False}
             else:
-                return "Please attach a CSV file"
+                return {"message": "Please attach a CSV file", "success": False}
         else:
-            return "Please follow the proper format to register data"
+            return {"message": "Please attach a CSV file", "success": False}
         
 
 async def delete_event(message):
@@ -138,9 +138,11 @@ async def findDayNumber(channel_name):
             year = int(start_date[0].split("-")[2])
             month = int(start_date[0].split("-")[1])
             day = int(start_date[0].split("-")[0])
+
             hour = int(start_date[1].split(":")[0])
             minute = int(start_date[1].split(":")[1])
             second = int(start_date[1].split(":")[2])
+            
             start_time = datetime(year, month, day) + timedelta(hours = hour, minutes = minute, seconds = second)
             current_time = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
             # convert String type to datetime object
@@ -160,17 +162,19 @@ async def update_dayNumber(author_name, author_id, channel_name, current_day):
     db = cluster["Events"]
     collection = db[channel_name]
     
+    print(collection)
     all_records = collection.find()
     for record in all_records:
         if author_name in record.values() or author_id in record.values():
+            print(record)
             prev_day = record.get("day")
             # out of challenge
             if(current_day - prev_day > 1):
-                response = f"You have not posted on DAY {prev_day + 1}\nYou are out of challenge"
-                return response
+                return {"message": f"You have not posted on DAY {prev_day + 1}\nYou are out of challenge", "success": False}
             else:
                 collection.update_one(record, {"$set":{"day":current_day}})
-                return "YOU HAVE SUCCESSFULLY COMPLETED TODAY'S TASK :partying_face: "
-    return f"{author_name}, you have not registered for {channel_name}"
+                return {"message": f"YOU HAVE SUCCESSFULLY COMPLETED DAY {current_day} TASK :partying_face:", "success": True}
+    return {"message": f"{author_name}, you have not registered for {channel_name}", "success": False}
+
 
 
