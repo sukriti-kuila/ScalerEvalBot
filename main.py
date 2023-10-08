@@ -50,12 +50,14 @@ async def on_message(message):
         await message.channel.send(embed=embed)
 
 
-
 @client.event
 async def on_message_edit(before, after):
     if after.author == client.user:
         return
-    if after.author.id == after.channel.guild.owner_id:
+    
+    #New Event add
+    if after.content.lower().startswith("!evalbot new event"):
+        if after.author.id == after.channel.guild.owner_id:
             response = await eventData(after)
             if response["success"]:
                 embed = discord.Embed(title="Event Added!", description=response["message"], color=0x006600, timestamp = after.created_at)
