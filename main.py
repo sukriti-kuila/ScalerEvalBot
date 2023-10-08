@@ -24,19 +24,13 @@ async def on_message(message):
     
     # Reading participant data
     if message.content.lower().startswith("!evalbot new event"):
-        print("First if-else block")
         if message.author.id == message.channel.guild.owner_id:
             response = await eventData(message)
-            await message.channel.send(response)
-
-    # Adding tokens
-    elif message.content.lower().startswith("!evalbot add token"):
-        if message.author.id == message.channel.guild.owner_id:
-            amount = int(str(message.content).split("\n")[1])
-            username = "abhunia."
-            # command = f"t@points add @{username} {amount}"
-            command = f"t!points @{username}"
-            await message.channel.send(command)
+            if response["success"]:
+                embed = discord.Embed(title="Event Added!", description=response["message"], color=0x006600, timestamp = message.created_at)
+            else:
+                embed = discord.Embed(title="Failed to add event", description=response["message"], color=0xcc0000, timestamp = message.created_at) 
+            await message.channel.send(embed=embed)
 
     # delete event from database
     elif message.content.lower().startswith("!evalbot delete event"):
@@ -47,7 +41,12 @@ async def on_message(message):
     # Checking the desired Format
     elif message.content.lower().startswith("!evalbot"):
         response = await fomatting_check(message)
-        await message.channel.send(response)
+        if response["success"]:
+            response = f'**{message.author.name.upper()}**, {response["message"]}'
+            embed = discord.Embed(title="Correct Format", description=response, color=0x4dff4d, timestamp = message.created_at)
+        else:
+            embed = discord.Embed(title="Incorrect Format", description=response["message"], color=0xe60000, timestamp = message.created_at)     
+        await message.channel.send(embed=embed)
 
 
 @client.event
