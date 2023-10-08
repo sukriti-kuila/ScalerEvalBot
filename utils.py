@@ -161,12 +161,11 @@ async def update_dayNumber(author_name, author_id, channel_name, current_day):
 
     db = cluster["Events"]
     collection = db[channel_name]
-    
     print(collection)
     all_records = collection.find()
     for record in all_records:
         if author_name in record.values() or author_id in record.values():
-            print(record)
+            # print(record)
             prev_day = record.get("day")
             # out of challenge
             if(current_day - prev_day > 1):
@@ -175,6 +174,7 @@ async def update_dayNumber(author_name, author_id, channel_name, current_day):
                 collection.update_one(record, {"$set":{"day":current_day}})
                 return {"message": f"YOU HAVE SUCCESSFULLY COMPLETED DAY {current_day} TASK :partying_face:", "success": True}
     return {"message": f"{author_name}, you have not registered for {channel_name}", "success": False}
+
 
 
 
