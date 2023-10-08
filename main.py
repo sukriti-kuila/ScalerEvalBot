@@ -39,6 +39,22 @@ async def on_message(message):
             response = await delete_event(message)
             await message.channel.send(response)
 
+    # Export Eligible Participants' list in csv format
+    elif message.content.lower().startswith("!evalbot res"):
+        if message.author.id == message.channel.guild.owner_id:
+            message_str = str(message.content).split("\n")
+            if len(message_str) == 2:
+                event_name = message_str[1]
+                response = await exportResultCSV(event_name)
+                if response["success"]:
+                    await message.channel.send(file=response["message"])
+                else:
+                    embed = discord.Embed(title="Event doesn't exist", description=response["message"], color=0xe60000, timestamp = message.created_at)
+                    await message.channel.send(embed=embed)
+            else:
+                embed = discord.Embed(title="Incorrect Format", description="Looks Like you forgot to mention **event name**", color=0xe60000, timestamp = message.created_at)
+                await message.channel.send(embed=embed)
+    
     # Checking the desired Format
     elif message.content.lower().startswith("!evalbot"):
         response = await fomatting_check(message)
