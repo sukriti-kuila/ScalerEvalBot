@@ -33,7 +33,7 @@ async def on_message(message):
                 embed = discord.Embed(title="Failed to add event", description=response["message"], color=0xcc0000, timestamp = message.created_at) 
             await message.channel.send(embed=embed)
 
-    # delete event from database
+    # Delete event from database
     elif message.content.lower().startswith("!evalbot delete event"):
         if message.author.id == message.channel.guild.owner_id:
             response = await delete_event(message)
@@ -47,7 +47,10 @@ async def on_message(message):
                 event_name = message_str[1]
                 response = await exportResultCSV(event_name)
                 if response["success"]:
-                    await message.channel.send(file=response["message"])
+                    owner = message.author
+                    await owner.send(file=response["message"])
+                    embed = discord.Embed(title="CSV file generated", description="File has been sent to your DM", color=0x34eb71, timestamp = message.created_at)
+                    await message.channel.send(embed=embed)
                 else:
                     embed = discord.Embed(title="Event doesn't exist", description=response["message"], color=0xe60000, timestamp = message.created_at)
                     await message.channel.send(embed=embed)

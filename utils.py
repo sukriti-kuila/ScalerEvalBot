@@ -121,7 +121,7 @@ def is_valid_duration(duration):
         print("Error")
         return False    
     
-
+    
 async def findDayNumber(channel_name):
     # connect with mongodb
     cluster = await get_connection()
