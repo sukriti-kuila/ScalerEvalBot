@@ -9,7 +9,7 @@ from connection import *
 async def fomatting_check(message):
     message_str = str(message.content).split("\n")
     print(message_str)
-    if(len(message_str) < 2):
+    if(len(message_str) != 2):
         return {"message": "Follow the format carefully", "success": False}
     else:
         channel_name = str(message.channel)
@@ -36,7 +36,7 @@ async def fomatting_check(message):
         if len(first_line) == 3 and bot_command == "!evalbot" and completion_command[0].lower() == "completed" and completion_command[1][0:3].lower() == "day" and  user_day_no== day_no:
             if re.match(post_pattern, Second_line.lower()):
                 # update day number in the database
-                response = await update_dayNumber(str(message.author), message.author.id, channel_name, day_no)
+                response = await update_dayNumber(str(message.author), message.author.id, message, channel_name, day_no)
                 return response
             else:
                 return {"message": "\nYou have made a formatting mistake in line 2\nEdit the previous message or send a new message using the following format for line2\n\nsocial media link : <linkedin/twitter post> (Case-Insensitive)\n", "success": False}
@@ -86,7 +86,9 @@ async def db_connection(event_name, event_duration, start_date, filename):
 
     # using pandas
     df = pd.read_csv(filename)  # table format
+    print(df.shape[0])          # no. of rows of df
     df["day"] = int(0)
+    df['post_link'] = [[]] * df.shape[0]
     # convert to dictionary
     records_dictionary = df.to_dict(orient='records')
     collection.insert_many(records_dictionary)
@@ -152,7 +154,8 @@ async def findDayNumber(channel_name):
     else:
         print("Document not found in the collection.")
 
-async def update_dayNumber(author_name, author_id, channel_name, current_day):
+
+async def update_dayNumber(author_name, author_id, message, channel_name, current_day):
     # connect with mongodb
     cluster = await get_connection()
 
@@ -167,10 +170,22 @@ async def update_dayNumber(author_name, author_id, channel_name, current_day):
             # out of challenge
             if(current_day - prev_day > 1):
                 return {"message": f"You have not posted on DAY {prev_day + 1}\nYou are out of challenge", "success": False}
+            elif(current_day == prev_day):
+                return {"message": f"You have already posted taday's (DAY - {current_day}) TASK", "success": True}
             else:
-                collection.update_one(record, {"$set":{"day":current_day}})
+                print(type(record.get("post_link")))
+                post_day_no = f"day {current_day}"
+                post_link_discord = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
+                
+                # Define the update object to set "day" and push a new item to "post_link" array
+                update = {
+                    "$set": {"day": current_day},
+                    "$push": {"post_link": {post_day_no: post_link_discord}}
+                }
+                collection.update_one(record, update)
                 return {"message": f"YOU HAVE SUCCESSFULLY COMPLETED DAY {current_day} TASK :partying_face:", "success": True}
     return {"message": f"{author_name}, you have not registered for {channel_name}", "success": False}
+
 
 async def exportResultCSV(event_name):
         cluster = await get_connection()
