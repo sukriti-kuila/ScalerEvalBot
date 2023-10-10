@@ -37,7 +37,12 @@ async def on_message(message):
     elif message.content.lower().startswith("!evalbot delete event"):
         if message.author.id == message.channel.guild.owner_id:
             response = await delete_event(message)
-            await message.channel.send(response)
+            print(response)
+            if response["success"]:
+                embed = discord.Embed(title="Event Deleted", description=response["message"], color=0x34eb71, timestamp = message.created_at)   
+            else:
+                embed = discord.Embed(title="Something went wrong", description=response["message"], color=0xe60000, timestamp = message.created_at)
+            await message.channel.send(embed=embed)
 
     # Export Eligible Participants' list in csv format
     elif message.content.lower().startswith("!evalbot res"):
@@ -52,7 +57,7 @@ async def on_message(message):
                     embed = discord.Embed(title="CSV file generated", description="File has been sent to your DM", color=0x34eb71, timestamp = message.created_at)
                     await message.channel.send(embed=embed)
                 else:
-                    embed = discord.Embed(title="Event doesn't exist", description=response["message"], color=0xe60000, timestamp = message.created_at)
+                    embed = discord.Embed(title="Something went wrong", description=response["message"], color=0xe60000, timestamp = message.created_at)
                     await message.channel.send(embed=embed)
             else:
                 embed = discord.Embed(title="Incorrect Format", description="Looks Like you forgot to mention **event name**", color=0xe60000, timestamp = message.created_at)
@@ -62,7 +67,7 @@ async def on_message(message):
     elif message.content.lower().startswith("!evalbot"):
         response = await fomatting_check(message)
         if response["success"]:
-            response = f'**{message.author.name.upper()}**, {response["message"]}'
+            response = f'**{message.author.display_name.upper()}**, {response["message"]}'
             embed = discord.Embed(title="Correct Format", description=response, color=0x4dff4d, timestamp = message.created_at)
         else:
             embed = discord.Embed(title="Incorrect Format", description=response["message"], color=0xe60000, timestamp = message.created_at)     

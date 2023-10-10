@@ -42,7 +42,7 @@ async def fomatting_check(message):
                 return {"message": "\nYou have made a formatting mistake in line 2\nEdit the previous message or send a new message using the following format for line2\n\nsocial media link : <linkedin/twitter post> (Case-Insensitive)\n", "success": False}
         else:
             if user_day_no != day_no:
-                return {"message": "Looks like the day number is wrong\n**Edit the previous message or send a new message to rectify the mistake**", "success": False}
+                return {"message": "Looks like the **day number** is wrong\nEdit the previous message or send a new message to rectify the mistake", "success": False}
             return {"message": "\nYou have made a formatting mistake in line 1\nEdit the previous message or send a new message using the following format for line1\n\n!Evalbot completed day<day no> (Case-Insensitive)\n", "success": False}
 
 
@@ -102,8 +102,10 @@ async def delete_event(message):
         db = cluster["Events"]
         if event_name in db.list_collection_names():
             db.drop_collection(event_name)
-            return f"Event - {event_name} successfully deleted"
-        return f"{event_name} does not exit in database"
+            return {"message":f"Event - {event_name} successfully deleted", "success":True}
+        return {"message":f"{event_name} does not exit in database", "success":False}
+    else:
+        return {"message":"Looks Like you forgot to mention **event name**", "success":False}
     
 def is_valid_date(date_str):
     try:
@@ -121,7 +123,7 @@ def is_valid_duration(duration):
         print("Error")
         return False    
     
-    
+
 async def findDayNumber(channel_name):
     # connect with mongodb
     cluster = await get_connection()
@@ -183,42 +185,58 @@ async def update_dayNumber(author_name, author_id, message, channel_name, curren
                     "$push": {"post_link": {post_day_no: post_link_discord}}
                 }
                 collection.update_one(record, update)
-                return {"message": f"YOU HAVE SUCCESSFULLY COMPLETED DAY {current_day} TASK :partying_face:", "success": True}
+                return {"message": f"YOU HAVE SUCCESSFULLY COMPLETED **DAY {current_day}** TASK :partying_face:", "success": True}
     return {"message": f"{author_name}, you have not registered for {channel_name}", "success": False}
 
 
 async def exportResultCSV(event_name):
-        cluster = await get_connection()
-        db = cluster["Events"]
-        try:
-            collection = db[event_name]
-            # fetch the event_duration from DB
-            document = collection.find_one({"_id": 0})
-            event_duration = document.get("event_duration")
-            
+    cluster = await get_connection()
+    db = cluster["Events"]
+    
+    try:
+        collection = db[event_name]
+        
+        # Fetch the event_duration from DB
+        document = collection.find_one({"_id": 0})
+        event_duration = document.get("event_duration")
+        
+        records = collection.find({"day": event_duration})
+        
+        # Count the number of records that match the event_duration filter
+        record_count = collection.count_documents({"day": event_duration})
+        
+        if record_count > 0:
             records = collection.find({"day": event_duration})
+            # Convert records to a list of dictionaries
+            records_list = list(records)
 
-            # Count the number of records that match the event_duration filter
-            record_count = collection.count_documents({"day": event_duration})
+            df = pd.DataFrame(records_list)
 
-            if record_count > 0:
-                records = collection.find({"day": event_duration})
-                # Convert records to a list of dictionaries
-                records_list = list(records)
+            columns_to_exclude = ["_id", "day"]
+            df = df.drop(columns=columns_to_exclude)
 
-                df = pd.DataFrame(records_list)
+            for index, row in df.iterrows():
+                for day_link_dict in row["post_link"]:
+                    for day, link in day_link_dict.items():
+                        df.at[index, day] = link
 
-                columns_to_exclude = ["_id","day"]
-                df = df.drop(columns=columns_to_exclude)
+            # Drop the original "post_link" column
+            df = df.drop(columns=["post_link"])
 
-                csv_filename = f"{event_name}_result.csv"
-                df.to_csv(csv_filename, index=False)
+            csv_filename = f"{event_name}_result.csv"
+            df.to_csv(csv_filename, index=False)
 
-                file = discord.File(csv_filename)
-            cluster.close()
-            return {"message":file, "success": True}
-        except:
-            return {"message":"There is no such **event**","success":False}
+            file = discord.File(csv_filename)
+        else:
+            print("No Eligible participant")
+        
+        cluster.close()
+        return {"message": file, "success": True}
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {"message": "An error occurred", "success": False}
+
+
         
         
 
