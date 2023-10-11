@@ -220,12 +220,10 @@ async def exportResultCSV(event_name):
                     for day, link in day_link_dict.items():
                         df.at[index, day] = link
 
-            # Drop the original "post_link" column
             df = df.drop(columns=["post_link"])
 
             csv_filename = f"{event_name}_result.csv"
             df.to_csv(csv_filename, index=False)
-
             file = discord.File(csv_filename)
         else:
             print("No Eligible participant")
