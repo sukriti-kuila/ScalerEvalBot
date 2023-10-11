@@ -1,5 +1,4 @@
 __pycache__/
-abc_1.py
 utils.py
 *.csv
 .env
