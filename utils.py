@@ -17,7 +17,7 @@ async def fomatting_check(message):
         bot_command = first_line[0].lower()
         completion_command = first_line[1 : len(first_line)]
         Second_line = message_str[1]
-        post_pattern = r'^social media link : https://(www.linkedin.com|x.com|twitter.com)/+'
+        post_pattern = r'^social media link\s*:\s*https://(www.linkedin.com|x.com|twitter.com)/+'
 
         day_no = await findDayNumber(channel_name)
         print("day_no ", day_no)
@@ -189,47 +189,56 @@ async def update_dayNumber(author_name, author_id, message, channel_name, curren
     return {"message": f"{author_name}, you have not registered for {channel_name}", "success": False}
 
 
-async def exportResultCSV(event_name):
+async def exportResultCSV(message):
     cluster = await get_connection()
     db = cluster["Events"]
     
     try:
-        collection = db[event_name]
+        message_str = str(message.content).split("\n")
+        if len(message_str) == 2:
+            event_name = message_str[1]
+            collection = db[event_name]
+            print("huhuc",collection.name)
+
+            # Fetch the event_duration from DB
+            document = collection.find_one({"_id": 0})
+            if document:
+                event_duration = document.get("event_duration")
+                records = collection.find({"day": event_duration})
+            
+                # Count the number of records that match the event_duration filter
+                record_count = collection.count_documents({"day": event_duration})
+            
+                if record_count > 0:
+                    records = collection.find({"day": event_duration})
+                    # Convert records to a list of dictionaries
+                    records_list = list(records)
+
+                    df = pd.DataFrame(records_list)
+
+                    columns_to_exclude = ["_id", "day"]
+                    df = df.drop(columns=columns_to_exclude)
+
+                    for index, row in df.iterrows():
+                        for day_link_dict in row["post_link"]:
+                            for day, link in day_link_dict.items():
+                                df.at[index, day] = link
+
+                    df = df.drop(columns=["post_link"])
+
+                    csv_filename = f"{event_name}_result.csv"
+                    df.to_csv(csv_filename, index=False)
+                    file = discord.File(csv_filename)
+                else:
+                    print("No Eligible participant")
+                    return {"message": "There is no eligible participant who completed task", "success": False}
         
-        # Fetch the event_duration from DB
-        document = collection.find_one({"_id": 0})
-        event_duration = document.get("event_duration")
-        
-        records = collection.find({"day": event_duration})
-        
-        # Count the number of records that match the event_duration filter
-        record_count = collection.count_documents({"day": event_duration})
-        
-        if record_count > 0:
-            records = collection.find({"day": event_duration})
-            # Convert records to a list of dictionaries
-            records_list = list(records)
-
-            df = pd.DataFrame(records_list)
-
-            columns_to_exclude = ["_id", "day"]
-            df = df.drop(columns=columns_to_exclude)
-
-            for index, row in df.iterrows():
-                for day_link_dict in row["post_link"]:
-                    for day, link in day_link_dict.items():
-                        df.at[index, day] = link
-
-            df = df.drop(columns=["post_link"])
-
-            csv_filename = f"{event_name}_result.csv"
-            df.to_csv(csv_filename, index=False)
-            file = discord.File(csv_filename)
+                cluster.close()
+                return {"message": file, "success": True}
+            else:
+               return {"message": f"There is no such event as **\"{event_name}\"** in the database", "success": False} 
         else:
-            print("No Eligible participant")
-        
-        cluster.close()
-        return {"message": file, "success": True}
+            return {"message": "Looks Like you forgot to mention **event name**", "success": False}
     except Exception as e:
         print(f"An error occurred: {e}")
         return {"message": "An error occurred", "success": False}
