@@ -17,7 +17,7 @@ async def fomatting_check(message):
         bot_command = first_line[0].lower()
         completion_command = first_line[1 : len(first_line)]
         Second_line = message_str[1]
-        post_pattern = r'^social media link : https://(www.linkedin.com|x.com|twitter.com)/+'
+        post_pattern = r'^social media link\s*:\s*https://(www.linkedin.com|x.com|twitter.com)/+'
 
         day_no = await findDayNumber(channel_name)
         print("day_no ", day_no)
