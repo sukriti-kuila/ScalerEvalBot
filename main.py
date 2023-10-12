@@ -32,6 +32,9 @@ async def on_message(message):
             else:
                 embed = discord.Embed(title="Failed to add event", description=response["message"], color=0xcc0000, timestamp = message.created_at) 
             await message.channel.send(embed=embed)
+        else:
+            embed = discord.Embed(title="Permission Denied", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = message.created_at) 
+            await message.channel.send(embed=embed)
 
     # Delete event from database
     elif message.content.lower().startswith("!evalbot delete event"):
@@ -43,9 +46,12 @@ async def on_message(message):
             else:
                 embed = discord.Embed(title="Something went wrong", description=response["message"], color=0xe60000, timestamp = message.created_at)
             await message.channel.send(embed=embed)
+        else:
+            embed = discord.Embed(title="Permission Denied", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = message.created_at) 
+            await message.channel.send(embed=embed)
 
     # Export Eligible Participants' list in csv format
-    elif message.content.lower().startswith("!evalbot res"):
+    elif message.content.lower().startswith("!evalbot res event"):
         if message.author.id == message.channel.guild.owner_id:
             message_str = str(message.content).split("\n")
             if len(message_str) == 2:
@@ -62,6 +68,9 @@ async def on_message(message):
             else:
                 embed = discord.Embed(title="Incorrect Format", description="Looks Like you forgot to mention **event name**", color=0xe60000, timestamp = message.created_at)
                 await message.channel.send(embed=embed)
+        else:
+            embed = discord.Embed(title="Permission Denied", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = message.created_at) 
+            await message.channel.send(embed=embed)
     
     # Checking the desired Format
     elif message.content.lower().startswith("!evalbot"):
