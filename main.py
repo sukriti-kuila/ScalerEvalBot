@@ -44,7 +44,7 @@ async def main():
 async def on_ready():
     print("The bot is now ready for use")
     print("-----------------------------")
-    # main.start()
+    main.start()
 
 @client.event
 async def on_message(message):
