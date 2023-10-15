@@ -1,9 +1,4 @@
-import re
-from datetime import datetime, timedelta
-import pytz
-import csv
-import pandas as pd
-import discord
+from libraries import *
 from connection import *
 
 async def fomatting_check(message):
@@ -69,13 +64,15 @@ async def eventData(message):
                     await db_connection(event_name, event_duration, start_date, filename)
                     return {"message": "Participants entries have been successfully recorded", "success": True}
                 else:
-                    return {"message": "Please attach a CSV file", "success": False}
+                    return {"message": "Please attach a **CSV** file", "success": False}
             else:
-                return {"message": "Please attach a CSV file", "success": False}
+                return {"message": "Please attach a **CSV** file", "success": False}
         else:
-            return {"message": "Please attach a CSV file", "success": False}
+            return {"message": "Please attach a **CSV** file", "success": False}
         
 async def db_connection(event_name, event_duration, start_date, filename):
+    event_name = event_name.lower()
+
     # connect with mongodb
     cluster = await get_connection()
     
@@ -198,7 +195,6 @@ async def exportResultCSV(message):
         if len(message_str) == 2:
             event_name = message_str[1]
             collection = db[event_name]
-            print("huhuc",collection.name)
 
             # Fetch the event_duration from DB
             document = collection.find_one({"_id": 0})
@@ -228,7 +224,7 @@ async def exportResultCSV(message):
 
                     csv_filename = f"{event_name}_result.csv"
                     df.to_csv(csv_filename, index=False)
-                    file = discord.File(csv_filename)
+                    file = nextcord.File(csv_filename)
                 else:
                     print("No Eligible participant")
                     return {"message": "There is no eligible participant who completed task", "success": False}
@@ -242,6 +238,175 @@ async def exportResultCSV(message):
     except Exception as e:
         print(f"An error occurred: {e}")
         return {"message": "An error occurred", "success": False}
+
+async def updateToken(message):
+    message_str = str(message.content).split("\n")
+    if len(message_str) == 2:
+        amount =  int(message_str[1])
+        guild_id = message.guild.id
+
+        if message.attachments:
+            attachment = message.attachments[0]
+            if attachment.filename.endswith('.csv'):
+                filename = attachment.filename
+                await attachment.save(filename)
+                response = await tatsuAPICall(guild_id, amount, filename)
+                return response
+            else:
+                return {"message": "Please attach a **CSV** file", "success": False}
+        else:
+            return {"message": "Please attach a **CSV** file", "success": False}
+    else:
+        return {"message":"You forgot to mention **TOKEN_AMONUT**", "success": False}
+
+async def tatsuAPICall(guild_id, amount, csv_filename):
+    # check whether the event exists in the DB
+    cluster = await get_connection()
+    db = cluster["Events"]
+    updated_user = []
+    failed_user = []
+    try:
+        TATSU_API_TOKEN = config('TATSU_API_TOKEN')
+        payload = {
+            'action': 0,
+            'amount': amount
+        }
+        headers = {'Authorization': TATSU_API_TOKEN}
+
+        df = pd.read_csv(csv_filename)
+        columns = [col for col in df.columns if 'discord id' in col.lower()]
+        # Specify that the 'discord id' columns should be treated as strings to maintain precision
+        column_dtype = {col: str for col in columns}
+
+        df = pd.read_csv(csv_filename, dtype=column_dtype)
+
+        columns = [col for col in df.columns if 'discord id' in col.lower()]
+        df_columns = df[columns]
+
+        for index, row in df_columns.iterrows():
+            for col in columns:
+                value = row[col]
+                if not pd.isnull(value):
+                    print(value)
+                    endpoint_url = f'https://api.tatsu.gg/v1/guilds/{guild_id}/members/{value}/points'
+                    response = requests.patch(endpoint_url, json=payload, headers=headers)
+
+                    if response.status_code == 200:
+                        modified_points_data = response.json()
+                        updated_user.append(str(modified_points_data["user_id"]))
+                        print(f'Successfully modified points: {modified_points_data}')
+
+                    else:
+                        failed_user.append(str(value))
+                        print(f'Failed to modify points. Status code: {response.status_code}')
+                        # print(response.text)
+
+    except Exception as e:
+        print(str(e))
+        return {"message": "Something went wrong", "success": False}
+    return {"message": "Tokens have been updated of eligible participants", "updated": updated_user, "failed": failed_user, "success": True}
+
+# Slash commands
+async def add_event_command():
+    return (
+            "```!evalbot new event\n"
+            "<event name>\n"
+            "<event start date[DD-MM-YYYY] [SPACE] start time[HH:MM:SS]>\n"
+            "<event duration>\n"
+            "<CSV File>\n```")
+
+async def delete_event_command():
+    return (
+            "```!evalbot delete event\n"
+            "<event name>```\n")        
+
+async def result_event_command():
+    return ("```!evalbot res event\n"
+            "<event name>```\n"
+           )
+
+async def format_check_command():
+    return ("```!evalbot Completed Day<day number>\n"
+            "Social Media Link : <X (Twitter) or Linkedin Post Link>\n"
+            "<Screenshot of the task>```\n"
+            )
+
+async def update_token_event_command():
+    return ("```!evalbot update token\n"
+            "<token amount>\n"
+            "<CSV File>```\n"
+            "[Click Here To Discover More](https://github.com/sukriti-kuila/ScalerEvalBot)\n"
+            )
+
+async def set_reminder():
+    cluster = await get_connection()
+    db = cluster["Events"]
+    all_events = db.list_collection_names()
+    print(all_events)
+
+    reminder_user = []
+    for event in all_events:
+        collection = db[event]
+        time_left = await get_time_left(event)
+        print("time left", time_left)
+        if time_left:
+            day_no = await findDayNumber(event)
+            filter = {"day": day_no - 1}
+            document = collection.find(filter, {"_id":0, "day": 0, "post_link":0})
+
+            for user in document:
+                print("user is", user)
+                for key in user.keys():
+                    if "discord id" in key.lower():
+                        if not pd.isnull(user.get(key)):
+                            user_id = int(user.get(key))
+                            check = True
+                            for ele in reminder_user:
+                                if user_id in ele.keys():
+                                    ele[user_id].append(event)
+                                    check = False
+                            if(check == True):
+                                reminder_user.append({user_id:[event]})
+    return reminder_user           
+
+
+async def get_time_left(channel_name):
+    cluster = await get_connection()
+    db = cluster["Events"]
+    collection = db[channel_name]
+
+    filter = {"_id": 0}
+    document = collection.find_one(filter)
+    start_date = (document.get("start_date")).split()
+    if start_date:
+        hour = int(start_date[1].split(":")[0])
+        minute = int(start_date[1].split(":")[1])
+        second = int(start_date[1].split(":")[2])
+            
+        start_time = timedelta(hours = hour, minutes = minute, seconds = second)
+
+        current_time = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
+        hour = int(current_time.split(' ')[1].split(":")[0])
+        minute = int(current_time.split(' ')[1].split(":")[1])
+        second = int(current_time.split(' ')[1].split(":")[2])
+        # convert String type to datetime object
+        time_part = timedelta(hours = hour, minutes = minute, seconds = second)
+
+
+        time00 = timedelta(hours = 0, minutes = 0, seconds = 0)
+        time01 = timedelta(hours = 1, minutes = 0, seconds = 0)
+        time_left = 0
+        if(time00 <= start_time <= time01):
+            time_left = (start_time + timedelta(hours = 24, minutes = 0, seconds = 0)) - time_part
+        else:
+            time_left = (start_time - time_part)
+        print("time left ----------", time_left)
+        time_left = int(time_left.total_seconds())
+        print(time_left)
+        if 0 <= time_left <= 3600:
+            return True
+
+        return False
 
 
         
