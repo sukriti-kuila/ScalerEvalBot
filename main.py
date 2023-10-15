@@ -18,7 +18,7 @@ client = commands.Bot(command_prefix="!", intents=nextcord.Intents.all())
 @tasks.loop()
 async def main():
     current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
-    target_time = current_time.replace(hour=19, minute=32, second=0)
+    target_time = current_time.replace(hour=10, minute=00, second=0)
     
     if current_time > target_time:
         target_time += timedelta(days=1)
@@ -36,7 +36,7 @@ async def main():
                 await user.send("Reminder Hello")
             else:    
                 print("User not found")
-        await asyncio.sleep(120)
+        await asyncio.sleep(3600)
 
 # here, on_ready() tells that bot is ready to receive command
 # This is for testing
