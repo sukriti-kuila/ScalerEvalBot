@@ -71,6 +71,11 @@
 
     Only admins can create a new event, and participants will use the designated channels for daily post submissions.
 
+     ### Reminder
+   In case, someone forgets to post a daily task on Discord, the bot will send one reminder automatically approx 1 hour before.
+  #### Example
+   <img width="437" alt="Screenshot 2023-10-15 235618" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/e0b9c114-c81c-43ba-9978-454ef98414b2">
+
 - ### Format For Daily Post 
     To submit your daily task, please follow the format below. The bot will validate your submission, and if it's correct, you'll receive a confirmation message. In case of any mistakes, the bot will guide you for corrections. Replace the placeholders ```<day number>```, ```<X (Twitter) or Linkedin Post Link>```, and ```<Screenshot of the task>``` with the actual information.
     #### Format
