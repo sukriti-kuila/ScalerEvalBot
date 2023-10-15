@@ -1,5 +1,13 @@
-from utils import *
-from libraries import *
+from Utils.addNewEvent import *
+from Utils.connection import *
+from Utils.dayNumber import *
+from Utils.deleteEvent import *
+from Utils.eligibleList import *
+from Utils.formatCheck import *
+from Utils.setReminder import *
+from Utils.updateToken import *
+from Utils.slashCommands import *
+from Utils.libraries import *
 
 #token
 discord_api_key = config('DISCORD_BOT_TOKEN')
@@ -10,29 +18,25 @@ client = commands.Bot(command_prefix="!", intents=nextcord.Intents.all())
 @tasks.loop()
 async def main():
     current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
-    target_time = current_time.replace(hour=22, minute=28, second=0)
-    print("soemthinggg")
+    target_time = current_time.replace(hour=19, minute=32, second=0)
+    
     if current_time > target_time:
         target_time += timedelta(days=1)
 
     initial_delay = (target_time - current_time).total_seconds()
-    print("Initial delay ",initial_delay)
     await asyncio.sleep(initial_delay)
 
-    print ("After await")
     while True:
         response = await set_reminder()
-        for ele in response:
-            for key,value in ele.items():
-                user = client.get_user(key)
-                if user:
-                    event_str = ""
-                    for events in value:
-                        event_str += events+"  "
-                    await user.send(f"**REMINDER**\nYou haven't yet posted today's task post for the event(s) {event_str}")
-                else:    
-                    print("User not found")
-        await asyncio.sleep(3600)
+        for each_user in response:
+            print("Id ",each_user)
+            
+            user = client.get_user(each_user)
+            if user:
+                await user.send("Reminder Hello")
+            else:    
+                print("User not found")
+        await asyncio.sleep(120)
 
 # here, on_ready() tells that bot is ready to receive command
 # This is for testing
@@ -40,7 +44,7 @@ async def main():
 async def on_ready():
     print("The bot is now ready for use")
     print("-----------------------------")
-    main.start()
+    # main.start()
 
 @client.event
 async def on_message(message):
@@ -111,14 +115,6 @@ async def on_message(message):
         else:
             embed = nextcord.Embed(title="PERMISSION DENIED", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = message.created_at) 
             await message.channel.send(embed=embed)
-    
-    # 0-------------------------------------------------------
-    # elif message.content.lower().startswith("!evalbot abcd"):
-    #     if message.author.id == message.channel.guild.owner_id:
-    #         response = await set_reminder()
-    #         for ele in response:
-    #             for key,value in ele.items():
-    #                 print (key," ",value)
 
 
     # Checking the desired Format
@@ -160,7 +156,7 @@ async def on_message_edit(before, after):
                 embed = nextcord.Embed(title="Something went wrong", description=response["message"], color=0xe60000, timestamp = after.created_at)
             await after.channel.send(embed=embed)
         else:
-            embed = nextcord.Embed(title="PERMISSION DENIED", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = message.created_at) 
+            embed = nextcord.Embed(title="PERMISSION DENIED", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = after.created_at) 
             await after.channel.send(embed=embed)
 
     # Export Eligible Participants' list in csv format
@@ -193,11 +189,11 @@ async def on_message_edit(before, after):
                             for userid in response["failed"]:
                                 await after.channel.send(f"<@{userid}>")
             else:
-                embed = nextcord.Embed(title="TOKENS UPDATION FAILED", description=response["message"], color=0xe60000, timestamp = message.created_at)
+                embed = nextcord.Embed(title="TOKENS UPDATION FAILED", description=response["message"], color=0xe60000, timestamp = after.created_at)
                 await after.channel.send(embed=embed)
 
         else:
-            embed = nextcord.Embed(title="PERMISSION DENIED", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = message.created_at) 
+            embed = nextcord.Embed(title="PERMISSION DENIED", description="Sorry, you're not authorized to perform this command", color=0xcc0000, timestamp = after.created_at) 
             await after.channel.send(embed=embed)
                 
     #fomatting check
