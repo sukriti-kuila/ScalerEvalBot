@@ -1,2 +1,7 @@
-pymongo==3.11.0
-python-dotenv==0.14.0
+nextcord
+pytz
+pandas
+numpy
+python-decouple
+pymongo
+requests
