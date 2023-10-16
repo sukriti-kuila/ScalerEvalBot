@@ -18,8 +18,7 @@ client = commands.Bot(command_prefix="!", intents=nextcord.Intents.all())
 @tasks.loop()
 async def main():
     current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
-    target_time = current_time.replace(hour=10, minute=00, second=0)
-    
+    target_time = current_time.replace(hour=11, minute=0, second=0)
     if current_time > target_time:
         target_time += timedelta(days=1)
 
@@ -86,8 +85,9 @@ async def on_message(message):
             response = await exportResultCSV(message)
             if response["success"]:
                 owner = message.author
-                await owner.send(file=response["message"])
-                embed = nextcord.Embed(title="CSV FILE GENERATED", description="File has been sent to your DM", color=0x34eb71, timestamp = message.created_at)
+                await owner.send(file=response["message1"])
+                await owner.send(file=response["message2"])
+                embed = nextcord.Embed(title="CSV FILE GENERATED", description="Files have been sent to your DM", color=0x34eb71, timestamp = message.created_at)
                 await message.channel.send(embed=embed)
             else:
                 embed = nextcord.Embed(title="Something went wrong", description=response["message"], color=0xe60000, timestamp = message.created_at)
@@ -105,10 +105,11 @@ async def on_message(message):
                     await message.channel.send(f"**Following users tokens have been updated**")
                     for userid in response["updated"]:
                         await message.channel.send(f"<@{userid}>")
-                        if len(response["failed"]):
-                            await message.channel.send(f"\n\n**Following users tokens can't be updated**")
-                            for userid in response["failed"]:
-                                await message.channel.send(f"<@{userid}>")
+
+                if len(response["failed"]):
+                    await message.channel.send(f"\n\n**Following users tokens can't be updated**")
+                    for userid in response["failed"]:
+                        await message.channel.send(f"<@{userid}>")
 
             else:
                 embed = nextcord.Embed(title="TOKENS UPDATION FAILED", description=response["message"], color=0xe60000, timestamp = message.created_at)
@@ -209,8 +210,8 @@ async def on_message_edit(before, after):
         await after.channel.send(embed=embed)
 
 # Slash commands
-testserverid = 1081631255700963409 # mention your server Id
-@client.slash_command(name="help",description="List of all commands", guild_ids=[testserverid])
+testserverid = 1081631255700963409
+@client.slash_command(name="help",description="List of all commands",guild_ids=[testserverid])
 async def help (interaction: Interaction):
     embed = nextcord.Embed(title="**All Commands**",color=0x03f4fc)
 

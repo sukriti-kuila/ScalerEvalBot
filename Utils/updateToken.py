@@ -49,7 +49,6 @@ async def tatsuAPICall(guild_id, amount, csv_filename):
             for col in columns:
                 value = row[col]
                 if not pd.isnull(value):
-                    print(value)
                     endpoint_url = f'https://api.tatsu.gg/v1/guilds/{guild_id}/members/{value}/points'
                     response = requests.patch(endpoint_url, json=payload, headers=headers)
 
