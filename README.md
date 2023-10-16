@@ -121,7 +121,9 @@ _Note: In order to run ```/help``` command change the ```testserverid``` in ```m
 
 
 - ### Result of An Event
-    To obtain the lists of both **eligible** and **non-eligible** participants who have posted daily tasks throughout the event, you can use this command. Please note that **only admins** can use this command. The generated CSV files will be sent to the admin's DM.
+    To obtain the lists of both **eligible** and **non-eligible** participants who have posted daily tasks throughout the event, you can use this command. Please note that **only admins** can use this command. The generated CSV files will be sent to the admin's DM. The CSV file contains all the daily post links of discord along with basic information, providing moderators with the option to manually verify the posts if they wish to do so.
+
+
     #### Format
     ```
     !evalbot res event
