@@ -38,5 +38,5 @@ async def fomatting_check(message):
                 return {"message": "\nYou have made a formatting mistake in line 2\nEdit the previous message or send a new message using the following format for line2\n\nsocial media link : <linkedin/twitter post> (Case-Insensitive)\n", "success": False}
         else:
             if user_day_no != day_no:
-                return {"message": "Looks like the **day number** is wrong\nEdit the previous message or send a new message to rectify the mistake", "success": False}
+                return {"message": "Looks like the **DAY NUMBER** is wrong\nEdit the previous message or send a new message to rectify the mistake", "success": False}
             return {"message": "\nYou have made a formatting mistake in line 1\nEdit the previous message or send a new message using the following format for line1\n\n!Evalbot completed day<day no> (Case-Insensitive)\n", "success": False}

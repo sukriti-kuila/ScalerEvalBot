@@ -15,11 +15,19 @@ async def exportResultCSV(message):
             document = collection.find_one({"_id": 0})
             if document:
                 event_duration = document.get("event_duration")
-                records = collection.find({"day": event_duration})
+                # records = collection.find({"day": event_duration})
             
                 # Count the number of records that match the event_duration filter
                 record_count = collection.count_documents({"day": event_duration})
-            
+
+                filter_notEligible = {
+                        "$and": [
+                            {"day": {"$ne": event_duration}},
+                            {"_id": {"$ne": 0}}
+                        ]
+                }
+                record_count_notEligible = collection.count_documents(filter_notEligible)
+                
                 if record_count > 0:
                     records = collection.find({"day": event_duration})
                     # Convert records to a list of dictionaries
@@ -37,15 +45,34 @@ async def exportResultCSV(message):
 
                     df = df.drop(columns=["post_link"])
 
-                    csv_filename = f"{event_name}_result.csv"
+                    csv_filename = f"{event_name}_qualified.csv"
                     df.to_csv(csv_filename, index=False)
-                    file = nextcord.File(csv_filename)
-                else:
-                    print("No Eligible participant")
-                    return {"message": "There is no eligible participant who completed task", "success": False}
-        
-                cluster.close()
-                return {"message": file, "success": True}
+                    file1 = nextcord.File(csv_filename)
+                
+                if record_count_notEligible > 0:
+                    records_notEligible = collection.find(filter_notEligible)
+                    records_list = list(records_notEligible)
+    
+                    df2 = pd.DataFrame(records_list)
+
+                    print (df2)
+                    columns_to_exclude = ["_id"]
+                    df2 = df2.drop(columns=columns_to_exclude)
+
+                    for index, row in df2.iterrows():
+                        for day_link_dict in row["post_link"]:
+                            for day, link in day_link_dict.items():
+                                df2.at[index, day] = link
+
+                    df2 = df2.drop(columns=["post_link"])
+                    df2.rename(columns={"day": "streak"}, inplace=True)
+
+                    csv_filename = f"{event_name}_disqualified.csv"
+                    df2.to_csv(csv_filename, index=False)
+                    file2 = nextcord.File(csv_filename)
+
+                    cluster.close()
+                return {"message1": file1, "message2": file2, "success": True}
             else:
                return {"message": f"There is no such event as **\"{event_name}\"** in the database", "success": False} 
         else:

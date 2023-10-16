@@ -13,7 +13,6 @@ async def findDayNumber(channel_name):
     if document:
         start_date = (document.get("start_date")).split()
         if start_date:
-            print(f"Stat Date: {start_date}")
             year = int(start_date[0].split("-")[2])
             month = int(start_date[0].split("-")[1])
             day = int(start_date[0].split("-")[0])
@@ -39,7 +38,7 @@ async def update_dayNumber(author_name, author_id, message, channel_name, curren
 
     db = cluster["Events"]
     collection = db[channel_name]
-    print(collection)
+    # print(collection)
     all_records = collection.find()
     for record in all_records:
         if author_name in record.values() or author_id in record.values():
@@ -47,11 +46,10 @@ async def update_dayNumber(author_name, author_id, message, channel_name, curren
             prev_day = record.get("day")
             # out of challenge
             if(current_day - prev_day > 1):
-                return {"message": f"You have not posted on DAY {prev_day + 1}\nYou are out of challenge", "success": False}
+                return {"message": f"You didn't post on DAY **{prev_day + 1}**\n**YOU ARE OUT OF CHALLENGE**", "success": False}
             elif(current_day == prev_day):
                 return {"message": f"You have already posted taday's (DAY - {current_day}) TASK", "success": True}
             else:
-                print(type(record.get("post_link")))
                 post_day_no = f"day {current_day}"
                 post_link_discord = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
                 
