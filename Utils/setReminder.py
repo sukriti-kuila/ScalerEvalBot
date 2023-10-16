@@ -59,7 +59,7 @@ async def get_time_left(channel_name):
         time00 = timedelta(hours = 0, minutes = 0, seconds = 0)
         time01 = timedelta(hours = 1, minutes = 0, seconds = 0)
         time_left = 0
-        if(time00 <= start_time <= time01):
+         if(time00 <= start_time <= time01 and not(time00 <= time_part <= time01)):
             time_left = (start_time + timedelta(hours = 24, minutes = 0, seconds = 0)) - time_part
         else:
             time_left = (start_time - time_part)
