@@ -28,14 +28,16 @@ async def main():
 
     while True:
         response = await set_reminder()
-        for each_user in response:
-            print("Id ",each_user)
-            
-            user = client.get_user(each_user)
-            if user:
-                await user.send("Reminder Hello")
-            else:    
-                print("User not found")
+        for ele in response:
+            for key,value in ele.items():
+                user = client.get_user(key)
+                if user:
+                    event_str = ""
+                    for events in value:
+                        event_str += events+"  "
+                    await user.send(f"**REMINDER**\nYou haven't yet posted today's task post for the event(s) {event_str}")
+                else:    
+                    print("User not found")
         await asyncio.sleep(3600)
 
 # here, on_ready() tells that bot is ready to receive command
@@ -207,8 +209,8 @@ async def on_message_edit(before, after):
         await after.channel.send(embed=embed)
 
 # Slash commands
-testserverid = 1081631255700963409
-@client.slash_command(name="help",description="List of all commands",guild_ids=[testserverid])
+testserverid = 1081631255700963409 # mention your server Id
+@client.slash_command(name="help",description="List of all commands", guild_ids=[testserverid])
 async def help (interaction: Interaction):
     embed = nextcord.Embed(title="**All Commands**",color=0x03f4fc)
 
