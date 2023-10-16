@@ -44,6 +44,16 @@
      ```bash
      pip install -r requirements.txt
      ```
+**Create the .env file**
+   - Before you can run the project locally, you need to set up a .env file to store sensitive information like API keys and other configuration variables. Follow these steps to create and populate the .env file:
+
+   - Create a file named .env in the root directory of your project. Open the .env file in a text editor and add the following lines, replacing the placeholders with your actual API keys and configuration information:
+     ```
+     DISCORD_BOT_TOKEN=your_discord_bot_token
+     DB_URI_STRING=your_database_uri
+     TATSU_API_TOKEN=your_tatsu_api_token
+      ```
+
 
 **Run The Project**
    - You can now run the project locally as you normally would. Use the appropriate command to execute your project. For example, if your project's entry point is a Python script, you can run it using:
@@ -52,7 +62,7 @@
      ```
    - Replace `your_script.py` with the actual name of your project's main script.
 
-
+_Note: In order to run ```/help``` command change the ```testserverid``` in ```main.py``` variable to the desired server id_
 ## Commands
 
 - ### Add A New Event
@@ -72,10 +82,16 @@
     Only admins can create a new event, and participants will use the designated channels for daily post submissions.
 
      ### Reminder
-   In case, someone forgets to post a daily task on Discord, the bot will send one reminder automatically approx 1 hour before.
+   In case, someone forgets to post a daily task on Discord, the bot will send one reminder automatically **approx 1 hour** before.
   #### Example
    <img width="437" alt="Screenshot 2023-10-15 235618" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/e0b9c114-c81c-43ba-9978-454ef98414b2">
 
+  #### Note
+     Do not upload the CSV file with scientific notation (eg: 6.73929E+17)
+  
+     <img width="416" alt="Screenshot 2023-10-16 212657" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/0859907e-1a79-4224-a78a-d3709d1120ef">
+      
+   
 - ### Format For Daily Post 
     To submit your daily task, please follow the format below. The bot will validate your submission, and if it's correct, you'll receive a confirmation message. In case of any mistakes, the bot will guide you for corrections. Replace the placeholders ```<day number>```, ```<X (Twitter) or Linkedin Post Link>```, and ```<Screenshot of the task>``` with the actual information.
     #### Format
@@ -87,6 +103,10 @@
     #### Example
     <img width="579" alt="format_check" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/2c87ab69-d084-4643-91d2-1ada798fca89">
 
+   #### Disqualify
+  
+   In case you skip one day and try to post it on the next day following message will be shown
+   <img width="580" alt="misses_a_day" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/eb47ce71-aa09-4d87-867d-3fc121e264f6">
 
 
 - ### Delete An Event
@@ -100,15 +120,18 @@
   <img width="535" alt="Delete_command" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/7a549c3c-7331-42cf-aeba-c973f910fd8f">
 
 
-- ### Getting Eligible Participants List
-    To obtain a list of eligible participants who have posted daily tasks throughout the event, you can use this command. Please note that **only admins** can use this command. The generated CSV file will be sent to the admin's DM.
+- ### Result of An Event
+    To obtain the lists of both **eligible** and **non-eligible** participants who have posted daily tasks throughout the event, you can use this command. Please note that **only admins** can use this command. The generated CSV files will be sent to the admin's DM.
     #### Format
     ```
     !evalbot res event
     <event name>
     ```
     #### Example
-  <img width="576" alt="res event" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/2b0a2b95-2491-4f55-8e9c-a3f5c61cebea">
+     <img width="550" alt="result" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/7b7d387f-03b5-42d7-8292-3004cedfc16f">
+     <img width="500" alt="result_dm" src="https://github.com/sukriti-kuila/ScalerEvalBot/assets/87015685/fa47d7ae-3c5e-4ac4-993a-bece8555bbb3">
+
+
 
 
 - ### Update Token
